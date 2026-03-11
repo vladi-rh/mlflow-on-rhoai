@@ -9,21 +9,32 @@ This script shows how to:
 4. View and analyze results in MLflow's Evaluation UI
 
 Usage:
-    # First, start MLflow tracking server:
-    mlflow server --host 127.0.0.1 --port 5000
-
-    # Then run this script:
     python evaluate_agent.py
 
 Environment variables (see .env.example):
     MAAS_API_KEY: API key for MaaS endpoint
     MAAS_BASE_URL: MaaS endpoint URL
     MAAS_MODEL: Model name
+    MLFLOW_TRACKING_URI: MLflow server URI
+    MLFLOW_TRACKING_TOKEN: OpenShift token for RHOAI auth
 """
 
 import os
 import sys
+import warnings
+import logging
+
+# Suppress warnings before other imports
+warnings.filterwarnings("ignore")
+
 from dotenv import load_dotenv
+
+# Load .env with override to ensure env values take precedence
+load_dotenv(override=True)
+
+# Suppress MLflow autolog context warnings
+logging.getLogger("mlflow").setLevel(logging.ERROR)
+logging.getLogger("mlflow.utils.autologging_utils").setLevel(logging.CRITICAL)
 
 import mlflow
 from mlflow.genai.scorers import scorer
@@ -45,6 +56,10 @@ from traced_agent import (
 # - expectations: ground truth values for scoring
 EVAL_DATASET = [
     {
+        "inputs": {"user_message": "What is 25 * 17 + 89?"},
+        "expectations": {"expected_answer": "514"},
+    },
+    {
         "inputs": {"user_message": "What is the square root of 144?"},
         "expectations": {"expected_answer": "12"},
     },
@@ -53,28 +68,24 @@ EVAL_DATASET = [
         "expectations": {"expected_answer": "16"},
     },
     {
-        "inputs": {"user_message": "What's the weather in San Francisco?"},
-        "expectations": {"expected_answer": "65"},  # Temperature
+        "inputs": {"user_message": "What's the weather in Tokyo?"},
+        "expectations": {"expected_answer": "Temperature"},
     },
     {
-        "inputs": {"user_message": "Is it sunny or cloudy in London today?"},
-        "expectations": {"expected_answer": "Cloudy"},
+        "inputs": {"user_message": "What's the weather in New York?"},
+        "expectations": {"expected_answer": "Temperature"},
+    },
+    {
+        "inputs": {"user_message": "Search for information about MLflow tracing"},
+        "expectations": {"expected_answer": "MLflow"},
     },
     {
         "inputs": {"user_message": "Multiply 33 by 3 and then add 1"},
         "expectations": {"expected_answer": "100"},
     },
     {
-        "inputs": {"user_message": "Search for information about machine learning"},
-        "expectations": {"expected_answer": "machine learning"},
-    },
-    {
         "inputs": {"user_message": "What is 1000 minus 273?"},
         "expectations": {"expected_answer": "727"},
-    },
-    {
-        "inputs": {"user_message": "Compare the weather in Tokyo and Sydney"},
-        "expectations": {"expected_answer": "Sydney"},
     },
 ]
 
@@ -201,17 +212,29 @@ def run_evaluation():
     - Results in the Evaluation UI
     """
 
+    # Check for required token
+    if not os.environ.get("MLFLOW_TRACKING_TOKEN"):
+        print("Warning: MLFLOW_TRACKING_TOKEN not set.")
+        print("Run: export MLFLOW_TRACKING_TOKEN=$(oc whoami --show-token)")
+
     # Setup MLflow
     mlflow_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
     mlflow.set_tracking_uri(mlflow_uri)
 
+    # Use env experiment name or default to evaluation-specific name
     experiment_name = os.environ.get(
-        "MLFLOW_EXPERIMENT_NAME", "langchain-agent-evaluation"
+        "MLFLOW_EXPERIMENT_NAME", "agent-evaluation"
     )
-    experiment = mlflow.get_experiment_by_name(experiment_name)
-    if experiment is None:
-        mlflow.create_experiment(experiment_name)
-    mlflow.set_experiment(experiment_name)
+    # Add -eval suffix if not already present
+    if not experiment_name.endswith("-eval") and not experiment_name.endswith("-evaluation"):
+        experiment_name = f"{experiment_name}-eval"
+
+    try:
+        mlflow.set_experiment(experiment_name)
+    except Exception as e:
+        print(f"Warning: Could not set experiment '{experiment_name}': {e}")
+        experiment_name = "agent-evaluation"
+        mlflow.set_experiment(experiment_name)
 
     # Enable autolog for tracing during evaluation
     try:

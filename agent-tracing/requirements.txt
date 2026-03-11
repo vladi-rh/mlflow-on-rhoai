@@ -10,8 +10,8 @@ langgraph>=0.2.0
 # MCP Integration
 langchain-mcp-adapters>=0.1.0
 
-# MLflow for tracing
-mlflow>=2.17.0
+# MLflow for tracing (standard package for LangChain autolog support)
+# mlflow>=2.17.0
 
 # For evaluation
 pandas>=2.0.0
@@ -20,9 +20,14 @@ pandas>=2.0.0
 httpx>=0.27.0
 urllib3>=2.0.0
 duckduckgo-search>=6.0.0
+ddgs>=0.1.0
 
 # Async support
 aiohttp>=3.9.0
 
 # Environment management
 python-dotenv>=1.0.0
+
+# RHOAI MLflow SDK (for RHOAI authentication)
+# Note: Use rhoai-3.4 for latest, or standard mlflow>=2.17.0 for full autolog support
+mlflow @ git+https://github.com/red-hat-data-services/mlflow@rhoai-3.4

@@ -47,7 +47,10 @@ The agent:
 | File | Description |
 |------|-------------|
 | `traced_agent.py` | LangChain/LangGraph agent implementation |
-| `run_tracing_demo.py` | Runner script with MLflow autolog |
+| `run_tracing_demo.py` | Runner script with manual MLflow logging |
+| `run_tracing_demo_autolog.py` | Simplified runner with autolog only |
+| `run_tracing_demo_autolog_prompt.py` | Runner with MLflow Prompt Registry |
+| `register_prompt.py` | Register prompts in MLflow Prompt Registry |
 | `evaluate_agent.py` | Evaluation script with custom scorers |
 | `requirements.txt` | Python dependencies |
 | `.env.example` | Environment template (committed) |
@@ -80,7 +83,7 @@ Then export your environment variables:
 # MaaS (Model as a Service) Configuration
 export MAAS_API_KEY=your-api-key-here
 export MAAS_BASE_URL=https://litellm-litemaas.apps.xxx/v1
-export MAAS_MODEL=Llama-4-Scout-17B-16E-W4A16
+export MAAS_MODEL=qwen3-14b
 
 # MLflow Configuration (RHOAI)
 DS_GW=$(oc get route data-science-gateway -n openshift-ingress -o template --template='{{.spec.host}}')
@@ -111,10 +114,7 @@ cp .env.example .env
 
 ```bash
 # Batch mode with example queries
-python run_tracing_demo.py
-
-# Interactive mode
-python run_tracing_demo.py -i
+python run_tracing_demo_autolog.py
 ```
 
 ### 4. View Traces
@@ -197,6 +197,37 @@ def my_tool(param: str) -> str:
 
 # Add to LOCAL_TOOLS in traced_agent.py
 LOCAL_TOOLS = [calculator, get_weather, search, my_tool]
+```
+
+## MLflow Prompt Registry
+
+Register and manage versioned prompts centrally in MLflow:
+
+```bash
+# Register all prompt variants (English, Spanish, Bilingual)
+python register_prompt.py
+
+# List registered prompts
+python register_prompt.py --list
+
+# Load a specific prompt version
+python register_prompt.py --load agent-system-prompt-es --version 1
+```
+
+Run the agent with different languages:
+
+```bash
+# English (default)
+python run_tracing_demo_autolog_prompt.py
+
+# Spanish - responds in Spanish
+python run_tracing_demo_autolog_prompt.py --lang es
+
+# Bilingual - responds in user's language
+python run_tracing_demo_autolog_prompt.py --lang bilingual
+
+# Use specific prompt version
+python run_tracing_demo_autolog_prompt.py --lang es --prompt-version 2
 ```
 
 ## Running Evaluation

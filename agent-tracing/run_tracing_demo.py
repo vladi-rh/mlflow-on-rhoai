@@ -31,9 +31,17 @@ from dotenv import load_dotenv
 # Load .env BEFORE importing mlflow so env vars are available
 load_dotenv()
 
-# Disable InsecureRequestWarning for self-signed certificates
+# Disable ALL warnings first
+import warnings
+warnings.filterwarnings("ignore")
+
 import urllib3
+import logging
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Suppress MLflow autolog context warnings (known issue with async LangGraph)
+logging.getLogger("mlflow.utils.autologging_utils").setLevel(logging.CRITICAL)
+logging.getLogger("mlflow").setLevel(logging.ERROR)
 
 # Check for RHOAI authentication (optional for ODH servers)
 mlflow_uri = os.environ.get("MLFLOW_TRACKING_URI", "")
@@ -123,7 +131,7 @@ async def run_example_queries_async(agent, mlflow_uri, mcp_client=None):
     # Add travel query if MCP is enabled
     if mcp_client:
         example_queries.append(
-            "Find me a direct flight from San Francisco to Tokyo on March 31st"
+            "Find me a direct flight from San Francisco to Tokyo on April 15th 2026"
         )
 
     for i, query in enumerate(example_queries, 1):
