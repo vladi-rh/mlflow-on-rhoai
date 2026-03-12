@@ -230,6 +230,16 @@ python run_tracing_demo_autolog_prompt.py --lang bilingual
 python run_tracing_demo_autolog_prompt.py --lang es --prompt-version 2
 ```
 
+### Prompt Registry UI
+
+View registered prompts with version history and tags:
+
+![Prompt Registry - Version List](../docs/prompt1.png)
+
+View traces linked to specific prompt versions:
+
+![Prompt Registry - Linked Traces](../docs/prompt2.png)
+
 ## Running Evaluation
 
 ```bash
