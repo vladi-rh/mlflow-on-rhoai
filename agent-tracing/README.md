@@ -1,4 +1,4 @@
-# Agent Tracing with MLflow
+# Agent Tracing & Observability with MLflow and RHOAI
 
 This folder contains a **LangChain/LangGraph agent** with automatic **MLflow tracing** and **MCP (Model Context Protocol)** tool integration.
 
